@@ -17,9 +17,14 @@ jobs:
           - arch: x86_64-unknown-linux-gnu
             os: ubuntu-latest
             features: "--features mimalloc"
-            # Nom fixe : sur workflow_dispatch, github.ref_name est la branche,
-            # et un nom de branche contenant « / » casserait l'archive.
+            # Fixed name: on workflow_dispatch github.ref_name is the branch, and a
+            # branch name containing "/" would break the archive.
             file_name: openobserve-mcp-tls-linux-amd64
+            file_ext: .tar.gz
+          - arch: aarch64-unknown-linux-gnu
+            os: ubuntu-24.04-arm
+            features: "--features mimalloc"
+            file_name: openobserve-mcp-tls-linux-arm64
             file_ext: .tar.gz
     runs-on: ${{ matrix.os }}
     steps:
@@ -74,10 +79,17 @@ jobs:
           brew install protobuf coreutils boost
 
       - name: Install dependencies for linux
-        if: contains(matrix.arch, 'linux-gnu')
+        if: contains(matrix.arch, 'x86_64-unknown-linux-gnu')
         run: |
           sudo apt-get -y update
           sudo apt-get -y install libssl-dev pkg-config gcc g++ g++-aarch64-linux-gnu gcc-aarch64-linux-gnu musl-dev musl-tools
+
+      # The arm64 runner builds natively, so it needs the plain toolchain only.
+      - name: Install dependencies for linux ARM
+        if: contains(matrix.arch, 'aarch64-unknown-linux-gnu')
+        run: |
+          sudo apt-get -y update
+          sudo apt-get -y install libssl-dev pkg-config gcc g++
 
       - name: Install rust toolchain
         uses: dtolnay/rust-toolchain@master
